@@ -49,7 +49,7 @@ const fetchReservationDetail = async () => {
       editForm.value.checkInDate = (response.checkInDate || response.CheckInDate || '').slice(0, 16)
       editForm.value.checkOutDate = (response.checkOutDate || response.CheckOutDate || '').slice(0, 16)
 
-      // 2. Odanın gerçek kapasitesini öğrenmek için /api/Rooms/{id} isteği atıyoruz[cite: 9]
+      // 2. Odanın gerçek kapasitesini öğrenmek için /api/Rooms/{id} isteği atıyoruz
       const roomId = response.roomId || response.RoomId
       if (roomId) {
         try {
@@ -57,7 +57,7 @@ const fetchReservationDetail = async () => {
             headers: { Authorization: `Bearer ${token}` }
           })
           if (roomResponse) {
-            roomCapacity.value = roomResponse.capacity || roomResponse.Capacity || 4
+            roomCapacity.value = roomResponse.capacity ?? roomResponse.Capacity ?? roomResponse.data?.capacity ?? 4
           }
         } catch (roomErr) {
           console.error('Failed to fetch room capacity:', roomErr)
@@ -117,9 +117,7 @@ const updateReservation = async () => {
       body: payload
     })
 
-    
-
-    showFeedback( 'Reservation successfully updated.'||res.message , 'success')
+    showFeedback('Reservation successfully updated.', 'success')
     isEditing.value = false
     fetchReservationDetail()
   } catch (error) {
@@ -203,9 +201,12 @@ onMounted(() => {
             <input v-model="editForm.checkOutDate" type="datetime-local" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-amber-500" />
           </div>
           <div>
+            <!-- Dinamik Oda Kapasitesi (roomCapacity değişkeni bağlandı) -->
             <label class="block text-xs font-semibold text-slate-600 mb-1">Guest Count (Max: {{ roomCapacity }})</label>
             <select v-model="editForm.guestCount" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-amber-500">
-              <option v-for="n in roomCapacity" :key="n" :value="n">{{ n }} {{ n === 1 ? 'Guest' : 'Guests' }}</option>
+              <option v-for="n in roomCapacity" :key="n" :value="n">
+                {{ n }} {{ n === 1 ? 'Guest' : 'Guests' }}
+              </option>
             </select>
           </div>
         </div>
@@ -238,6 +239,7 @@ onMounted(() => {
               <span class="w-1.5 h-1.5 rounded-full mr-1.5 bg-emerald-500"></span>
               {{ reservation.status || reservation.Status }}
             </span>
+
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 text-sm">

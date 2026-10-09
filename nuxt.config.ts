@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss','@nuxt/icon'],
   runtimeConfig: {
     public: {
-      apiBase: 'http://localhost:5179' // Kendi .NET Core API adresini buraya yazabilirsin
+      apiBase: 'http://localhost:5179' // Kendi .NET Core API adresi
     }
   }
 })

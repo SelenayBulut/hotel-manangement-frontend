@@ -1,32 +1,43 @@
 <template>
   <div class="min-h-screen bg-slate-50 flex">
-    <!-- Sol Sidebar Bileşeni (components/hotelowner/sidebar.vue) -->
-    <HotelownerSidebar :user="user" />
+    
+    <!-- Hotel Owner Sidebar -->
+    <Sidebar role="Hotel Owner" :user="user" :isOpen="sidebarOpen" @close="sidebarOpen = false" />
 
     <!-- Sağ Ana Alan -->
-    <div class="flex-1 ml-64 flex flex-col min-w-0">
-      <!-- Üst Header Bileşeni (components/hotelowner/header.vue) -->
-      <HotelownerHeader :user="user" />
+    <div class="flex-1 flex flex-col min-w-0 lg:pl-64">
+      
+      <!-- Ortak Header (Hotel Owner rolüyle) -->
+      <Header 
+        role="Hotel Owner" 
+        :user="user" 
+        @toggle-sidebar="sidebarOpen = !sidebarOpen" 
+      />
 
-      <!-- Sayfaların geleceği alan -->
-      <main class="flex-1 p-8 overflow-y-auto">
+      <!-- Sayfa İçeriği -->
+      <main class="flex-1 p-6 lg:p-10 overflow-y-auto">
         <slot />
       </main>
+
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import Header from '@/components/Header.vue'
+import Sidebar from '@/components/Sidebar.vue' 
+
+const sidebarOpen = ref(false)
 
 const user = ref({
-  firstName: 'Otel Sahibi',
-  name: 'Otel Sahibi',
-  initials: 'OS'
+  firstName: 'Hotel Owner',
+  name: 'Hotel Owner',
+  initials: 'HO'
 })
 
 onMounted(() => {
-  const username = localStorage.getItem('username') || 'Otel Sahibi'
+  const username = localStorage.getItem('username') || localStorage.getItem('ownerName') || 'Otel Sahibi'
   user.value = {
     firstName: username,
     name: username,

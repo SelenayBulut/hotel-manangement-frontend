@@ -344,7 +344,7 @@ onMounted(() => {
             <!-- Normal Satır -->
             <tr v-if="editingHotelId !== hotel.id" class="hover:bg-slate-50/50 transition">
               <td class="py-4 px-6 font-semibold text-slate-900 flex items-center space-x-3">
-                <img v-if="hotel.imageUrl" :src="hotel.imageUrl" alt="Hotel" class="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
+                <img v-if="hotel.imageUrl" :src="`${config.public.apiBase}${hotel.imageUrl.startsWith('/') ? '' : '/'}${hotel.imageUrl}`" alt="Hotel" class="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
                 <div v-else class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs flex-shrink-0">
                   {{ hotel.name.substring(0, 2).toUpperCase() }}
                 </div>

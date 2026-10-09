@@ -3,20 +3,19 @@
     
     <!-- Sol: Arama Çubuğu -->
     <div class="flex items-center space-x-4 flex-1 max-w-md">
-      
+      <slot name="search">
+        <!-- Eğer arama çubuğu özelleştirilmek istenirse slot kullanılabilir -->
+      </slot>
     </div>
 
     <!-- Sağ: Rol, Bildirim ve Profil -->
     <div class="flex items-center space-x-4">
       
-      <!-- Rol Göstergesi (Admin olarak güncellendi) -->
+      <!-- Rol Göstergesi -->
       <div class="text-xs text-slate-500 flex items-center space-x-1">
         <span>Viewing as</span>
-        <span class="font-semibold text-slate-800">Admin</span>
-        
+        <span class="font-semibold text-slate-800">{{ role }}</span>
       </div>
-
-      
 
       <!-- Profil Avatarı ve Baş Harfler -->
       <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-sm flex items-center justify-center shadow-sm">
@@ -28,8 +27,15 @@
 </template>
 
 <script setup>
-// Admin için prop zorunlu olmasın, dışarıdan verilmezse varsayılan 'AM' (Alex Morgan) gelsin
+import { computed } from 'vue'
+
 const props = defineProps({
+  // Rol adı: 'Admin', 'Customer', 'Hotel Owner' vb.
+  role: {
+    type: String,
+    required: true
+  },
+  
   user: {
     type: Object,
     default: () => ({ initials: 'AM' })

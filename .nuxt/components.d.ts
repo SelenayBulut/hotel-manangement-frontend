@@ -14,12 +14,8 @@ type HydrationStrategies = {
 type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {}, {}, { hydrated: () => void }> & T
 
 
-export const AdminHeader: typeof import("../app/components/admin/header.vue")['default']
-export const AdminSidebar: typeof import("../app/components/admin/sidebar.vue")['default']
-export const CustomerHeader: typeof import("../app/components/customer/header.vue")['default']
-export const CustomerSidebar: typeof import("../app/components/customer/sidebar.vue")['default']
-export const HotelownerHeader: typeof import("../app/components/hotelowner/header.vue")['default']
-export const HotelownerSidebar: typeof import("../app/components/hotelowner/sidebar.vue")['default']
+export const Header: typeof import("../app/components/header.vue")['default']
+export const Sidebar: typeof import("../app/components/sidebar.vue")['default']
 export const NuxtWelcome: typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']
 export const NuxtLayout: typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']
 export const NuxtErrorBoundary: typeof import("../node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']
@@ -45,12 +41,8 @@ export const Head: typeof import("../node_modules/nuxt/dist/head/runtime/compone
 export const Html: typeof import("../node_modules/nuxt/dist/head/runtime/components")['Html']
 export const Body: typeof import("../node_modules/nuxt/dist/head/runtime/components")['Body']
 export const NuxtIsland: typeof import("../node_modules/nuxt/dist/app/components/nuxt-island")['default']
-export const LazyAdminHeader: LazyComponent<typeof import("../app/components/admin/header.vue")['default']>
-export const LazyAdminSidebar: LazyComponent<typeof import("../app/components/admin/sidebar.vue")['default']>
-export const LazyCustomerHeader: LazyComponent<typeof import("../app/components/customer/header.vue")['default']>
-export const LazyCustomerSidebar: LazyComponent<typeof import("../app/components/customer/sidebar.vue")['default']>
-export const LazyHotelownerHeader: LazyComponent<typeof import("../app/components/hotelowner/header.vue")['default']>
-export const LazyHotelownerSidebar: LazyComponent<typeof import("../app/components/hotelowner/sidebar.vue")['default']>
+export const LazyHeader: LazyComponent<typeof import("../app/components/header.vue")['default']>
+export const LazySidebar: LazyComponent<typeof import("../app/components/sidebar.vue")['default']>
 export const LazyNuxtWelcome: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']>
 export const LazyNuxtLayout: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']>
 export const LazyNuxtErrorBoundary: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']>

@@ -18,6 +18,9 @@ const currentStep = ref(1) // 1: Room, 2: Dates, 3: Review, 4: Confirm
 const selectedRoom = ref(null)
 const submitting = ref(false)
 
+// Şık Hata/Bildirim State'i
+const errorMessage = ref('')
+
 const checkInDate = ref('2026-10-18')
 const checkOutDate = ref('2026-10-22')
 const guestCount = ref(2)
@@ -59,18 +62,25 @@ const fetchHotelDetailsAndRooms = async () => {
     })
 
     if (roomsRes) {
-      rooms.value = roomsRes.map(room => ({
-        id: room.id || room.Id,
-        roomNumber: room.roomNumber || room.RoomNumber || '101',
-        roomType: room.roomType || room.RoomType || 'Standard',
-        capacity: room.capacity ?? room.Capacity ?? 2,
-        pricePerNight: room.pricePerNight ?? room.PricePerNight ?? 0,
-        isAvailable: room.isAvailable ?? room.IsAvailable ?? true,
-        image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=400&q=80'
-      }))
+      rooms.value = roomsRes.map(room => {
+        const rawImageUrl = room.imageUrl || room.ImageUrl
+        const roomImage = rawImageUrl 
+          ? (rawImageUrl.startsWith('http') ? rawImageUrl : `${config.public.apiBase}${rawImageUrl}`)
+          : 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=400&q=80'
+
+        return {
+          id: room.id || room.Id,
+          roomNumber: room.roomNumber || room.RoomNumber || '101',
+          roomType: room.roomType || room.RoomType || 'Standard',
+          capacity: room.capacity ?? room.Capacity ?? 2,
+          pricePerNight: room.pricePerNight ?? room.PricePerNight ?? 0,
+          isAvailable: room.isAvailable ?? room.IsAvailable ?? true,
+          image: roomImage
+        }
+      })
     }
   } catch (error) {
-    console.error('Yükleme hatası:', error)
+    console.error('Loading error:', error)
   } finally {
     loading.value = false
   }
@@ -79,6 +89,7 @@ const fetchHotelDetailsAndRooms = async () => {
 const openBookingModal = (room) => {
   selectedRoom.value = room
   currentStep.value = 1
+  errorMessage.value = ''
   showModal.value = true
 }
 
@@ -94,7 +105,6 @@ const numberOfNights = computed(() => {
   return diffDays > 0 ? diffDays : 4
 })
 
-// Önizleme amaçlı kişi sayısını ve geceyi hesaba katan toplam fiyat hesaplaması
 const estimatedTotalPrice = computed(() => {
   if (!selectedRoom.value) return 0
   const pricePerNight = Number(selectedRoom.value.pricePerNight) || 0
@@ -103,16 +113,25 @@ const estimatedTotalPrice = computed(() => {
   return pricePerNight * nights * guests
 })
 
-// Rezervasyonu Tamamlama ve Backend'den Gerçek Fiyatı Alma
+// Rezervasyon Gönderimi ve Özel Tasarımlı İngilizce Hata Yönetimi
 const submitReservation = async () => {
   try {
     submitting.value = true
+    errorMessage.value = ''
     const token = getAuthToken()
 
+    const formatDate = (dateStr) => {
+      const d = new Date(dateStr)
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+
     const payload = {
-      roomId: selectedRoom.value.id,
-      checkInDate: new Date(checkInDate.value).toISOString(),
-      checkOutDate: new Date(checkOutDate.value).toISOString(),
+      roomId: selectedRoom.value.id, // Number() dönüşümünü kaldırdık, Guid olarak gidiyor
+      checkInDate: formatDate(checkInDate.value),
+      checkOutDate: formatDate(checkOutDate.value),
       guestCount: Number(guestCount.value)
     }
 
@@ -132,9 +151,8 @@ const submitReservation = async () => {
 
     currentStep.value = 4
   } catch (error) {
-    console.error('Rezervasyon hatası:', error)
-    confirmedReservation.value.totalPrice = estimatedTotalPrice.value
-    currentStep.value = 4
+    console.error('Reservation error:', error.data || error)
+    errorMessage.value = error.data?.message || error.data?.title || 'An error occurred while creating your reservation. Please check your dates and try again.'
   } finally {
     submitting.value = false
   }
@@ -178,10 +196,10 @@ onMounted(() => {
         </div>
         <div class="grid grid-rows-2 gap-4 h-[320px]">
           <div class="rounded-2xl overflow-hidden shadow-sm bg-slate-200 h-full">
-            <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80" alt="Detail" class="w-full h-full object-cover" />
+            <img :src="rooms[0]?.image || 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80'" alt="Room Detail 1" class="w-full h-full object-cover" />
           </div>
           <div class="rounded-2xl overflow-hidden shadow-sm bg-slate-200 h-full">
-            <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80" alt="Detail" class="w-full h-full object-cover" />
+            <img :src="rooms[1]?.image || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80'" alt="Room Detail 2" class="w-full h-full object-cover" />
           </div>
         </div>
       </div>
@@ -299,6 +317,12 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- Şık Hata Bildirim Kutusu -->
+        <div v-if="errorMessage" class="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center space-x-2">
+          <Icon name="lucide:alert-circle" class="w-4 h-4 flex-shrink-0" />
+          <span>{{ errorMessage }}</span>
+        </div>
+
         <!-- ADIMLAR -->
         <div>
           
@@ -340,12 +364,11 @@ onMounted(() => {
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Guests</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Guests (Max: {{ selectedRoom?.capacity || 1 }})</label>
               <select v-model="guestCount" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none">
-                <option :value="1">1 adult</option>
-                <option :value="2">2 adults</option>
-                <option :value="3">3 adults</option>
-                <option :value="4">4 adults</option>
+                <option v-for="n in (selectedRoom?.capacity || 1)" :key="n" :value="n">
+                  {{ n }} {{ n === 1 ? 'adult' : 'adults' }}
+                </option>
               </select>
             </div>
 

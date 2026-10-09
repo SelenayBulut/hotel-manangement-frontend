@@ -85,7 +85,6 @@ const filteredHotels = computed(() => {
       matchesPrice = minPrice > 2000
     }
 
-    // Odası olmayan otellerin de listelenmesi veya filtrelere uyum sağlaması
     const matchesRoomAndGuests = rooms.length === 0 ? (selectedRoomType.value === 'all') : rooms.some(room => {
       const rType = room.roomType || room.RoomType || ''
       const rCapacity = Number(room.capacity || room.Capacity || 1)
@@ -204,7 +203,7 @@ onMounted(() => {
         <!-- Kart Görseli -->
         <div class="relative h-52 overflow-hidden bg-slate-100">
           <img 
-            :src="hotel.imageUrl ? `${config.public.apiBase}${hotel.imageUrl}` : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80'" 
+            :src="hotel.imageUrl ? (hotel.imageUrl.startsWith('http') ? hotel.imageUrl : `${config.public.apiBase}${hotel.imageUrl}`) : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80'" 
             alt="Hotel" 
             class="w-full h-48 object-cover" 
           />

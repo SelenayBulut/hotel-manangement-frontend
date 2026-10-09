@@ -3,119 +3,40 @@ definePageMeta({
   layout: 'customer'
 })
 
-import { ref, computed, onMounted } from 'vue'
-
+import { ref, onMounted } from 'vue'
 const config = useRuntimeConfig()
+
 const loading = ref(true)
 const reservations = ref([])
 
-const activeTab = ref('all') // 'all', 'upcoming', 'completed', 'cancelled'
-const searchQuery = ref('')
-const selectedStatus = ref('')
+const getAuthToken = () => {
+  return localStorage.getItem('token') || localStorage.getItem('jwt') || localStorage.getItem('accessToken') || ''
+}
 
-// Verileri backend'den çeken ve UI ile eşleyen fonksiyon
+const formatDate = (dateString) => {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 const fetchReservations = async () => {
   try {
     loading.value = true
+    const token = getAuthToken()
     
-    const userId = localStorage.getItem('userId') || '808d656f-cc9f-4213-846e-a3245c5fd17b'
-    const token = localStorage.getItem('token') || ''
-
-    const response = await $fetch(`${config.public.apiBase}/api/Reservations/user/${userId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+    // Kullanıcının kendi rezervasyonlarını çeken endpoint (Projeye göre /api/Reservations veya kullanıcının ID'sine özel bir endpoint olabilir)
+    const response = await $fetch(`${config.public.apiBase}/api/Reservations`, {
+      headers: { Authorization: `Bearer ${token}` }
     })
-    
-    if (response && Array.isArray(response)) {
-      reservations.value = response.map(res => {
-        const isDel = res.isDeleted ?? res.IsDeleted ?? false
-        let stat = res.status || res.Status || 'Confirmed'
 
-        // Eğer isDeleted true ise veya statü iptal edilmişse Cancelled yapalım
-        if (isDel || stat.toLowerCase() === 'cancelled' || stat.toLowerCase() === 'deleted') {
-          stat = 'Cancelled'
-        }
-
-        // Modelde ödeme alanı olmadığı için statüye göre ödeme durumunu türetiyoruz
-        let payment = 'Paid'
-        if (stat === 'Cancelled') {
-          payment = 'Refunded'
-        }
-
-        // ID'yi görseldeki gibi RES-XXXX formatına dönüştürüyoruz
-        const rawId = res.id || res.Id || '0000'
-        const shortId = 'RES-' + rawId.slice(0, 4).toUpperCase()
-
-        // Oluşturulma tarihini "Booked Mar 12" formatına benzetiyoruz
-        const createdDate = new Date(res.createdAt || res.CreatedAt || Date.now())
-        const bookedFormatted = 'Booked ' + createdDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
-
-        // Check-in / Check-out tarih formatı (Örn: Jun 18, 2026)
-        const checkInFormatted = new Date(res.checkInDate || res.CheckInDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
-        const checkOutFormatted = new Date(res.checkOutDate || res.CheckOutDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
-
-        return {
-          ...res,
-          displayId: shortId,
-          bookedDateText: bookedFormatted,
-          checkInText: checkInFormatted,
-          checkOutText: checkOutFormatted,
-          status: stat,
-          paymentStatus: payment,
-          isDeleted: isDel
-        }
-      })
-    } else {
-      reservations.value = []
-    }
+    reservations.value = response || []
   } catch (error) {
-    console.error('Rezervasyonlar yüklenirken hata oluştu:', error)
+    console.error('Rezervasyonlar yüklenirken hata:', error)
     reservations.value = []
   } finally {
     loading.value = false
   }
 }
-
-// Sekmelere göre sayaçlar
-const counts = computed(() => {
-  return {
-    all: reservations.value.length,
-    upcoming: reservations.value.filter(r => r.status === 'Confirmed' || r.status === 'Upcoming').length,
-    completed: reservations.value.filter(r => r.status === 'Completed').length,
-    cancelled: reservations.value.filter(r => r.status === 'Cancelled').length
-  }
-})
-
-// Filtreleme mantığı
-const filteredReservations = computed(() => {
-  return reservations.value.filter(res => {
-    let matchesTab = true
-    const status = (res.status || '').toLowerCase()
-    
-    if (activeTab.value === 'upcoming') {
-      matchesTab = status === 'confirmed' || status === 'upcoming'
-    } else if (activeTab.value === 'completed') {
-      matchesTab = status === 'completed'
-    } else if (activeTab.value === 'cancelled') {
-      matchesTab = status === 'cancelled'
-    }
-
-    const query = searchQuery.value.toLowerCase()
-    const hotelName = (res.hotelName || res.HotelName || '').toLowerCase()
-    const roomNumber = (res.roomNumber || res.RoomNumber || '').toString().toLowerCase()
-    const displayId = res.displayId.toLowerCase()
-
-    const matchesSearch = !query || 
-      displayId.includes(query) ||
-      hotelName.includes(query) ||
-      roomNumber.includes(query)
-
-    const matchesStatus = !selectedStatus.value || status === selectedStatus.value.toLowerCase()
-
-    return matchesTab && matchesSearch && matchesStatus
-  })
-})
 
 onMounted(() => {
   fetchReservations()
@@ -123,194 +44,76 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto">
+  <div class="max-w-7xl mx-auto pb-12">
     
-    <!-- Sayfa Başlığı ve Yeni Rezervasyon Butonu -->
-    <div class="flex items-end justify-between mb-6">
+    <div class="mb-8 flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold text-slate-900">My reservations</h1>
-        <p class="text-sm text-slate-500 mt-1">View and manage your upcoming and past stays.</p>
+        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">My Stays</span>
+        <h1 class="text-2xl font-bold text-slate-900">Reservations</h1>
+        <p class="text-sm text-slate-500 mt-0.5">View and manage your hotel bookings.</p>
       </div>
-      <NuxtLink to="/customer/hotels" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl font-medium text-sm shadow-sm flex items-center space-x-2 transition">
-        <Icon name="lucide:plus" class="w-4 h-4" />
-        <span>New reservation</span>
+    </div>
+
+    <div v-if="loading" class="text-center py-24 text-slate-400 text-sm">
+      Loading your reservations...
+    </div>
+
+    <div v-else-if="reservations.length === 0" class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+      <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4 text-slate-400">
+        <Icon name="lucide:calendar-off" class="w-6 h-6" />
+      </div>
+      <h3 class="font-bold text-slate-900 text-base mb-1">No reservations found</h3>
+      <p class="text-xs text-slate-500 mb-6">You haven't made any bookings yet.</p>
+      <NuxtLink to="/hotels" class="inline-block bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition">
+        Explore Hotels
       </NuxtLink>
     </div>
 
-    <!-- Kategori Sekmeleri (Tabs) -->
-    <div class="flex items-center space-x-6 border-b border-slate-200 mb-6 text-sm">
-      <button 
-        @click="activeTab = 'all'" 
-        class="pb-3 font-semibold transition relative flex items-center space-x-2"
-        :class="activeTab === 'all' ? 'text-slate-900 border-b-2 border-slate-900 -mb-[2px]' : 'text-slate-500 hover:text-slate-900'"
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div 
+        v-for="res in reservations" 
+        :key="res.id || res.Id"
+        class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:border-slate-300 transition flex flex-col justify-between"
       >
-        <span>All reservations</span>
-        <span class="text-xs px-2 py-0.5 rounded-full" :class="activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'">{{ counts.all }}</span>
-      </button>
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-mono">
+              RES-{{ (res.id || res.Id).slice(0, 4).toUpperCase() }}
+            </span>
+            <span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>
+              {{ res.status || res.Status || 'Confirmed' }}
+            </span>
+          </div>
 
-      <button 
-        @click="activeTab = 'upcoming'" 
-        class="pb-3 font-semibold transition relative flex items-center space-x-2"
-        :class="activeTab === 'upcoming' ? 'text-slate-900 border-b-2 border-slate-900 -mb-[2px]' : 'text-slate-500 hover:text-slate-900'"
-      >
-        <span>Upcoming</span>
-        <span class="text-xs px-2 py-0.5 rounded-full" :class="activeTab === 'upcoming' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'">{{ counts.upcoming }}</span>
-      </button>
+          <h3 class="font-bold text-slate-900 text-lg mb-1">{{ res.hotelName || res.HotelName }}</h3>
+          <p class="text-xs text-slate-500 mb-4">Room {{ res.roomNumber || res.RoomNumber }} · {{ res.guestCount || res.GuestCount }} Guests</p>
 
-      <button 
-        @click="activeTab = 'completed'" 
-        class="pb-3 font-semibold transition relative flex items-center space-x-2"
-        :class="activeTab === 'completed' ? 'text-slate-900 border-b-2 border-slate-900 -mb-[2px]' : 'text-slate-500 hover:text-slate-900'"
-      >
-        <span>Completed</span>
-        <span class="text-xs px-2 py-0.5 rounded-full" :class="activeTab === 'completed' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'">{{ counts.completed }}</span>
-      </button>
+          <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-600 space-y-1 mb-6 border border-slate-100">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Check-in:</span>
+              <span class="font-medium text-slate-800">{{ formatDate(res.checkInDate || res.CheckInDate) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Check-out:</span>
+              <span class="font-medium text-slate-800">{{ formatDate(res.checkOutDate || res.CheckOutDate) }}</span>
+            </div>
+          </div>
+        </div>
 
-      <button 
-        @click="activeTab = 'cancelled'" 
-        class="pb-3 font-semibold transition relative flex items-center space-x-2"
-        :class="activeTab === 'cancelled' ? 'text-slate-900 border-b-2 border-slate-900 -mb-[2px]' : 'text-slate-500 hover:text-slate-900'"
-      >
-        <span>Cancelled</span>
-        <span class="text-xs px-2 py-0.5 rounded-full" :class="activeTab === 'cancelled' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'">{{ counts.cancelled }}</span>
-      </button>
-    </div>
-
-    <!-- Arama ve Filtreleme Barı -->
-    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-      
-      <!-- Arama Çubuğu -->
-      <div class="md:col-span-2 relative">
-        <Icon name="lucide:search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-        <input 
-          v-model="searchQuery"
-          type="text" 
-          placeholder="Search reservations..." 
-          class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-amber-500 text-slate-800"
-        />
-      </div>
-
-      <!-- Durum Filtresi (Status Dropdown) -->
-      <div>
-        <select 
-          v-model="selectedStatus"
-          class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-amber-500"
-        >
-          <option value="">All statuses</option>
-          <option value="Confirmed">Confirmed</option>
-          <option value="Completed">Completed</option>
-          <option value="Cancelled">Cancelled</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Yükleniyor Durumu -->
-    <div v-if="loading" class="text-center py-20 text-slate-400 text-sm">
-      Reservations are loading...
-    </div>
-
-    <!-- Tablo Alanı -->
-    <div v-else class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-              <th class="py-3.5 px-6">Reservation</th>
-              <th class="py-3.5 px-6">Hotel & Room</th>
-              <th class="py-3.5 px-6">Stay</th>
-              <th class="py-3.5 px-6">Guests</th>
-              <th class="py-3.5 px-6">Total</th>
-              <th class="py-3.5 px-6">Status</th>
-              <th class="py-3.5 px-6">Payment</th>
-              <th class="py-3.5 px-6 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 text-sm">
-            
-            <tr v-for="res in filteredReservations" :key="res.id || res.Id" class="hover:bg-slate-50/50 transition">
-              
-              <!-- Reservation ID & Booked Date -->
-              <td class="py-4 px-6">
-                <span class="font-bold text-slate-900 block">{{ res.displayId }}</span>
-                <span class="text-xs text-slate-400">{{ res.bookedDateText }}</span>
-              </td>
-
-              <!-- Hotel & Room -->
-              <td class="py-4 px-6">
-                <span class="font-semibold text-slate-900 block">{{ res.hotelName || res.HotelName }}</span>
-                <span class="text-xs text-slate-500">Room · {{ res.roomNumber || res.RoomNumber }}</span>
-              </td>
-
-              <!-- Stay Dates -->
-              <td class="py-4 px-6">
-                <span class="font-medium text-slate-800 block text-xs">{{ res.checkInText }}</span>
-                <span class="text-xs text-slate-400">to {{ res.checkOutText }}</span>
-              </td>
-
-              <!-- Guests -->
-              <td class="py-4 px-6 text-slate-600 text-xs">
-                {{ res.guestCount || res.GuestCount }} adults
-              </td>
-
-              <!-- Total Price -->
-              <td class="py-4 px-6 font-bold text-slate-900">
-                ₺{{ res.totalPrice || res.TotalPrice }}
-              </td>
-
-              <!-- Status Badge -->
-              <td class="py-4 px-6">
-                <span 
-                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
-                  :class="{
-                    'bg-emerald-50 text-emerald-700 border border-emerald-200': res.status === 'Confirmed',
-                    'bg-slate-100 text-slate-700 border border-slate-200': res.status === 'Completed',
-                    'bg-rose-50 text-rose-700 border border-rose-200': res.status === 'Cancelled'
-                  }"
-                >
-                  <span class="w-1.5 h-1.5 rounded-full mr-1.5" :class="{
-                    'bg-emerald-500': res.status === 'Confirmed',
-                    'bg-slate-500': res.status === 'Completed',
-                    'bg-rose-500': res.status === 'Cancelled'
-                  }"></span>
-                  {{ res.status }}
-                </span>
-              </td>
-
-              <!-- Payment Status Badge -->
-              <td class="py-4 px-6">
-                <span 
-                  class="inline-flex items-center text-xs font-medium"
-                  :class="{
-                    'text-emerald-700': res.paymentStatus === 'Paid',
-                    'text-amber-700': res.paymentStatus === 'Refunded'
-                  }"
-                >
-                  <span class="w-1.5 h-1.5 rounded-full mr-1.5" :class="{
-                    'bg-emerald-500': res.paymentStatus === 'Paid',
-                    'bg-amber-500': res.paymentStatus === 'Refunded'
-                  }"></span>
-                  {{ res.paymentStatus }}
-                </span>
-              </td>
-
-              <!-- Action (View) -->
-              <td class="py-4 px-6 text-right">
-                    <NuxtLink :to="`/customer/reservations/${res.id || res.Id}`" class="text-xs font-semibold text-slate-900 hover:text-amber-600 transition">
-                        View
-                      </NuxtLink>
-              </td>
-
-            </tr>
-
-            <!-- Eğer Filtreye Uygun Sonuç Yoksa -->
-            <tr v-if="filteredReservations.length === 0">
-              <td colspan="8" class="text-center py-12 text-slate-400 text-sm">
-                A reservation error occurred matching your search.
-              </td>
-            </tr>
-
-          </tbody>
-        </table>
+        <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div>
+            <span class="text-[10px] text-slate-400 block">Total Price</span>
+            <span class="font-bold text-slate-900 text-base">₺{{ res.totalPrice || res.TotalPrice }}</span>
+          </div>
+          <NuxtLink 
+            :to="`/customer/reservations/${res.id || res.Id}`"
+            class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1"
+          >
+            <span>Details</span>
+            <Icon name="lucide:chevron-right" class="w-3.5 h-3.5" />
+          </NuxtLink>
+        </div>
       </div>
     </div>
 

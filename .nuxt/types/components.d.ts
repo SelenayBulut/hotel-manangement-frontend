@@ -14,12 +14,8 @@ type HydrationStrategies = {
 type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {}, {}, { hydrated: () => void }> & T
 
 interface _GlobalComponents {
-  AdminHeader: typeof import("../../app/components/admin/header.vue")['default']
-  AdminSidebar: typeof import("../../app/components/admin/sidebar.vue")['default']
-  CustomerHeader: typeof import("../../app/components/customer/header.vue")['default']
-  CustomerSidebar: typeof import("../../app/components/customer/sidebar.vue")['default']
-  HotelownerHeader: typeof import("../../app/components/hotelowner/header.vue")['default']
-  HotelownerSidebar: typeof import("../../app/components/hotelowner/sidebar.vue")['default']
+  Header: typeof import("../../app/components/header.vue")['default']
+  Sidebar: typeof import("../../app/components/sidebar.vue")['default']
   NuxtWelcome: typeof import("../../node_modules/nuxt/dist/app/components/welcome.vue")['default']
   NuxtLayout: typeof import("../../node_modules/nuxt/dist/app/components/nuxt-layout")['default']
   NuxtErrorBoundary: typeof import("../../node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']
@@ -45,12 +41,8 @@ interface _GlobalComponents {
   Html: typeof import("../../node_modules/nuxt/dist/head/runtime/components")['Html']
   Body: typeof import("../../node_modules/nuxt/dist/head/runtime/components")['Body']
   NuxtIsland: typeof import("../../node_modules/nuxt/dist/app/components/nuxt-island")['default']
-  LazyAdminHeader: LazyComponent<typeof import("../../app/components/admin/header.vue")['default']>
-  LazyAdminSidebar: LazyComponent<typeof import("../../app/components/admin/sidebar.vue")['default']>
-  LazyCustomerHeader: LazyComponent<typeof import("../../app/components/customer/header.vue")['default']>
-  LazyCustomerSidebar: LazyComponent<typeof import("../../app/components/customer/sidebar.vue")['default']>
-  LazyHotelownerHeader: LazyComponent<typeof import("../../app/components/hotelowner/header.vue")['default']>
-  LazyHotelownerSidebar: LazyComponent<typeof import("../../app/components/hotelowner/sidebar.vue")['default']>
+  LazyHeader: LazyComponent<typeof import("../../app/components/header.vue")['default']>
+  LazySidebar: LazyComponent<typeof import("../../app/components/sidebar.vue")['default']>
   LazyNuxtWelcome: LazyComponent<typeof import("../../node_modules/nuxt/dist/app/components/welcome.vue")['default']>
   LazyNuxtLayout: LazyComponent<typeof import("../../node_modules/nuxt/dist/app/components/nuxt-layout")['default']>
   LazyNuxtErrorBoundary: LazyComponent<typeof import("../../node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']>
